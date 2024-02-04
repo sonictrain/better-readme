@@ -9,6 +9,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "inquirer": "^8.2.4"
+    "dayjs": "^1.11.10",
+    "inquirer": "^8.2.4",
+    "inquirer-table-input": "^0.0.3"
   }
 }
