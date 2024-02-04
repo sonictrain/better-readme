@@ -3,19 +3,21 @@ const path = require('path');
 const inquirer = require("inquirer");
 const generateMarkdown = require("./utils/generateMarkdown");
 
-// array of questions for user
-const questions = [
+const answers = [
+    {
+        type: 'input',
+        message: 'Question #1',
+        name: 'answer1'
+    },
+    {
+        type: 'input',
+        message: 'Question #2',
+        name: 'answer2'
+    },
+]
 
-];
-
-// function to write README file
-function writeToFile(fileName, data) {
-}
-
-// function to initialize program
 function init() {
-
+    inquirer.prompt(answers).then((answers) => {console.log(answers)});
 }
 
-// function call to initialize program
-init();
+init()
