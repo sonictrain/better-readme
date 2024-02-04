@@ -1,23 +1,55 @@
 const fs = require("fs");
 const path = require('path');
 const inquirer = require("inquirer");
+const chalk = require("chalk");
+const TableInput = require("inquirer-table-input");
 const generateMarkdown = require("./utils/generateMarkdown");
 
-const answers = [
+const initReadme = [
     {
-        type: 'input',
-        message: 'Question #1',
-        name: 'answer1'
+        type: 'confirm',
+        message: 'Do you want to generate an awsome README for your awesome project?',
+        name: 'consent',
+        default: true
     },
     {
         type: 'input',
-        message: 'Question #2',
-        name: 'answer2'
-    },
+        message: `What's the name of your project?`,
+        name: 'projectTitle',
+        when: (answer) => answer.consent === true
+    }
 ]
 
+
 function init() {
-    inquirer.prompt(answers).then((answers) => {console.log(answers)});
+    const dayjs = require('dayjs')
+
+    const date = dayjs()
+    
+    inquirer
+        .prompt(initReadme)
+        .then((answers) => {
+
+            const title = answers.projectTitle;
+            const folderTitle = answers.projectTitle.toLowerCase().replace(' ', '_');
+            const folderPath = `./output/${date.format('YYYYMMDD')}/${date.format('HHmmss')}-${folderTitle}`
+
+
+            fs.mkdir(folderPath,
+                { recursive: true },
+                (err) => {
+                    if (err) throw err;
+                }
+                );
+            
+            fs.writeFile(
+                `${folderPath}/README.md`,
+                `# ${title}`,
+                (err) =>
+                    err ? console.error(err) : console.log(`README Saved in ${folderPath}!`)
+                )
+        }
+        )
 }
 
-init()
+init();
