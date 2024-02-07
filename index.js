@@ -37,6 +37,64 @@ async function getConsent() {
     .catch((err) => console.error(err))
 }
 
+// get information for main sections
+async function getMainSections() {
+
+    const mainSections = [
+        {
+            type: 'input',
+            message: `Please type the Title of the project:`,
+            name: 'projectTitle',
+        },
+        {
+            type: 'input',
+            message: `Now please add a short description to display under the Project title as an Intro (be aware that a long description will follow):`,
+            name: 'shortDescription',
+        },
+        {
+            type: 'editor',
+            message: `It's time for a long description please press <enter> to use the editor (and note that Markdown language is allowed):`,
+            name: 'longDescription',
+        },
+        {
+            type: 'list',
+            message: `Lastly, I need you to pick a License for your project from the list below:`,
+            name: 'license',
+            // TODO get license list from Github API
+            choices: [
+                'GNU Affero General Public License v3.0',
+                'Apache License 2.0',
+                'BSD 2-Clause "Simplified" License',
+                'BSD 3-Clause "New" or "Revised" License',
+                'Boost Software License 1.0',
+                'Creative Commons Zero v1.0 Universal',
+                'Eclipse Public License 2.0',
+                'GNU General Public License v2.0',
+                'GNU General Public License v3.0',
+                'GNU Lesser General Public License v2.1',
+                'MIT License',
+                'Mozilla Public License 2.0',
+                'The Unlicense',
+            ]
+        },
+        {
+            type: 'confirm',
+            message: 'Alright, I have captured all the mandatory information. Do you want to add any custom sections to your README?',
+            name: 'extraConsent',
+            default: true,
+        }
+    ]
+
+    await inquirer
+    .prompt(mainSections)
+    .then((answers) => {
+        if (answers.extraConsent) {
+            //run a function to ask for any extra sections
+        }
+    })
+    .catch((err) => console.error(err))
+}
+
 // launch the initialisation process
 init();
 
