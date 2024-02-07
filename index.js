@@ -7,13 +7,14 @@ const inquirer = require("inquirer");
 
 // readme global configuration object
 let readmeConfig = {
-        sections: ['Title', 'Intro', 'Description', 'License'],
+        sections: [
+        ],
         repoLink: '',
         liveLink: ''
     }
 
 // create licenses arr container to be filled with a fetch call to the github API
-let licensesArrObj;
+let licensesArr;
 
 // init function - readmeConfig builder
 async function init() {
@@ -33,7 +34,6 @@ async function getConsent() {
     await inquirer
     .prompt(consent)
     .then((answer) => {
-        console.log(answer.readmeConsent)
         if (answer.readmeConsent) {
             getMainSections()
         }
@@ -64,7 +64,7 @@ async function getMainSections() {
             type: 'list',
             message: `Lastly, I need you to pick a License for your project from the list below:`,
             name: 'license',
-            choices: licensesArrObj.map((x) => x.name),
+            choices: licensesArr.map((x) => x.name),
             loop: false,
         },
         {
@@ -78,6 +78,30 @@ async function getMainSections() {
     await inquirer
     .prompt(mainSections)
     .then((answers) => {
+
+        const { projectTitle, shortDescription, longDescription, license } = answers
+
+        readmeConfig.sections.push(
+            {
+                sectionName: "Title",
+                bodyContent: projectTitle
+            },
+            {
+                sectionName: "Intro",
+                bodyContent: shortDescription
+            },
+            {
+                sectionName: "Description",
+                bodyContent: longDescription
+            },
+            {
+                sectionName: "License",
+                bodyContent: license
+            },
+        )
+
+        console.log(readmeConfig)
+
         if (answers.extraConsent) {
             getExtraSections()
         }
@@ -93,7 +117,7 @@ async function getExtraSections() {
         {
             type: 'input',
             message: 'Please input the section title',
-            name: 'sectionTitle'
+            name: 'extraTitle'
         },
         {
             type: 'list',
@@ -106,7 +130,7 @@ async function getExtraSections() {
         {
             type: 'editor',
             message: 'Add the body of the section (Markdown is allowed):',
-            name: 'sectionBody',
+            name: 'extraBody',
         },
         {
             type: 'confirm',
@@ -120,9 +144,21 @@ async function getExtraSections() {
         await inquirer
         .prompt(extraSections)
         .then((answers) => {
+
+            const { extraTitle, extraBody } = answers
+
             needSection = answers.needSection
-            console.log(answers.position.split(' ')[1])
+            let appendAtIndex = Object.values(readmeConfig.sections).indexOf(answers.position.split(' ')[1]);
+            pushExtraSection(
+                {
+                    sectionName: extraTitle,
+                    bodyContent: extraBody
+                },
+                appendAtIndex);
+
+            console.log(readmeConfig)
         })
+        .catch((err) => console.error(err))
     }
 }
 
@@ -130,15 +166,14 @@ async function getExtraSections() {
 function orderSelector() {
     let sectionsArray = []
     for (let i=0; i < readmeConfig.sections.length; i++) {
-        sectionsArray.push(new inquirer.Separator(`>>>>${readmeConfig.sections[i].toUpperCase()}<<<<`))
+        sectionsArray.push(new inquirer.Separator(`>>>>${readmeConfig.sections[i].sectionName.toUpperCase()}<<<<`))
         switch(i) {
             case readmeConfig.sections.length-1:
                 break;
             default:
-                sectionsArray.push(`After ${readmeConfig.sections[i]}`)
+                sectionsArray.push(`After ${readmeConfig.sections[i].sectionName}`)
         }
     }
-    console.log(sectionsArray);
     return sectionsArray
 }
 
@@ -146,8 +181,8 @@ async function getLicenses() {
     try {
         const res = await fetch('https://api.github.com/licenses')
         if (res.status === 200) {
-            licensesArrObj = await res.json();
-            licensesArr = licensesArrObj.forEach((x) => {return x.name})
+            licensesArr = await res.json();
+            licenses = licensesArr.forEach((x) => {return x.name})
         } else {
             console.log(`Error ${res.status}`);
         }
@@ -160,82 +195,12 @@ async function getLicenses() {
 // launch the initialisation process
 init();
 
-// const initReadme = [
-//     {
-//         type: 'confirm',
-//         message: 'Do you want to generate a README?',
-//         name: 'consent',
-//         default: true
-//     },
-//     {
-//         type: 'input',
-//         message: `What's the name of your project?`,
-//         name: 'projectTitle',
-//         when: (answer) => answer.consent === true
-//     },
-//     {
-//         type: 'input',
-//         message: `Please send me the link to the project's repository`,
-//         name: 'repoLink',
-//         when: (answer) => answer.consent === true
-//     },
-//     {
-//         type: 'input',
-//         message: `Please send me the link to the live app, if any`,
-//         name: 'liveLink',
-//         when: (answer) => answer.consent === true
-//     },
-//     {
-//         type: 'list',
-//         message: `Choose a License for your project from the list below:`,
-//         name: 'license',
-//         // TODO get license list from Github API
-//         choices: [
-//             'Apache License 2.0',
-//             'GNU General Public License',
-//             'MIT License',
-//             'Creative Commons Zero v1.0',
-//             'BSD 2-Clause "Simplified" License',
-//             'BSD 3-Clause "New" or "Revised" License',
-//             'Boost Software License 1.0',
-//             'Eclipse Public License 2.0',
-//             'GNU Affero General Public License v3.0',
-//             'GNU General Public License v2.0',
-//             'GNU Lesser General Public License v2.1',
-//             'Mozilla Public License 2.0',
-//             'The Unlicense'
-//         ],
-//         when: (answer) => answer.consent === true
-//     }
-// ]
-
-// async function addExtraSections() {
-    
-//     let needSection = true;
-//     const extraSections = [
-//         {
-//             type: 'input',
-//             message: 'Please input the section title',
-//             name: 'sectionTitle'
-//         },
-//         {
-//             type: 'confirm',
-//             message: 'Do you want to another section to the README?',
-//             name: 'needSection',
-//             default: true
-//         }
-//     ]
-//     while (needSection) {
-//         await inquirer
-//         .prompt(extraSections)
-//         .then((answers) => {
-//             needSection = answers.needSection
-//         })
-//     }
-// }
-
-// const mainSections = []
-
+// add the extra section in the position selected by the user
+const pushExtraSection = (newSectionObj, index) => {
+    const head = readmeConfig.sections.slice(0, index);
+    const tail = readmeConfig.sections.slice(index);
+    readmeConfig.sections = [...head, newSectionObj, ...tail]
+}
 
 //     const dayjs = require('dayjs')
 
@@ -245,7 +210,6 @@ init();
 //         .then((answers) => {
 
 //             const title = answers.projectTitle;
-//             // TODO Destructure the readmeConfig Obj and the answersObj too if necessary
 //             readmeConfig.sections.projectTitle = title
 //             readmeConfig.license = answers.license
 //             readmeConfig.repoLink = answers.repoLink
