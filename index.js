@@ -12,9 +12,13 @@ let readmeConfig = {
         liveLink: ''
     }
 
+// create licenses arr container to be filled with a fetch call to the github API
+let licensesArrObj;
+
 // init function - readmeConfig builder
 async function init() {
-    getConsent()
+    getLicenses();
+    getConsent();
 }
 
 // getConsent from user
@@ -60,22 +64,8 @@ async function getMainSections() {
             type: 'list',
             message: `Lastly, I need you to pick a License for your project from the list below:`,
             name: 'license',
-            // TODO get license list from Github API
-            choices: [
-                'GNU Affero General Public License v3.0',
-                'Apache License 2.0',
-                'BSD 2-Clause "Simplified" License',
-                'BSD 3-Clause "New" or "Revised" License',
-                'Boost Software License 1.0',
-                'Creative Commons Zero v1.0 Universal',
-                'Eclipse Public License 2.0',
-                'GNU General Public License v2.0',
-                'GNU General Public License v3.0',
-                'GNU Lesser General Public License v2.1',
-                'MIT License',
-                'Mozilla Public License 2.0',
-                'The Unlicense',
-            ]
+            choices: licensesArrObj.map((x) => x.name),
+            loop: false,
         },
         {
             type: 'confirm',
@@ -150,6 +140,21 @@ function orderSelector() {
     }
     console.log(sectionsArray);
     return sectionsArray
+}
+
+async function getLicenses() {
+    try {
+        const res = await fetch('https://api.github.com/licenses')
+        if (res.status === 200) {
+            licensesArrObj = await res.json();
+            licensesArr = licensesArrObj.forEach((x) => {return x.name})
+        } else {
+            console.log(`Error ${res.status}`);
+        }
+    }
+    catch {
+        (err) => console.error(err)
+    }
 }
 
 // launch the initialisation process
