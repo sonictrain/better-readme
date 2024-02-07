@@ -7,7 +7,7 @@ const inquirer = require("inquirer");
 
 // readme global configuration object
 let readmeConfig = {
-        sections: [],
+        sections: ['Title', 'Intro', 'Description', 'License'],
         repoLink: '',
         liveLink: ''
     }
@@ -48,12 +48,12 @@ async function getMainSections() {
         },
         {
             type: 'input',
-            message: `Now please add a short description to display under the Project title as an Intro (be aware that a long description will follow):`,
+            message: `Now please add a short description to serve as an Intro (a long description will follow):`,
             name: 'shortDescription',
         },
         {
             type: 'editor',
-            message: `It's time for a long description please press <enter> to use the editor (and note that Markdown language is allowed):`,
+            message: `It's time for the long description (please note that Markdown language is allowed):`,
             name: 'longDescription',
         },
         {
@@ -108,16 +108,8 @@ async function getExtraSections() {
         {
             type: 'list',
             message: `Where do you want to add the section?`,
-            name: 'order',
-            choices: [ // test with hardcoded section separators & line selectors
-                new inquirer.Separator('Title'),
-                '<-',
-                new inquirer.Separator('Intro'),
-                '<-',
-                new inquirer.Separator('Description'),
-                '<-',
-                new inquirer.Separator('License')
-            ],
+            name: 'position',
+            choices: orderSelector(),
             pageSize: 10,
             loop: false,
         },
@@ -128,7 +120,7 @@ async function getExtraSections() {
         },
         {
             type: 'confirm',
-            message: 'Do you want to another section to the README?',
+            message: 'Do you want to add another section to the README?',
             name: 'needSection',
             default: true
         }
@@ -139,9 +131,25 @@ async function getExtraSections() {
         .prompt(extraSections)
         .then((answers) => {
             needSection = answers.needSection
-            // somehow return index of the selection - may be necessary build a choice array of objects to add the index information
+            console.log(answers.position.split(' ')[1])
         })
     }
+}
+
+// get position for the extra sections
+function orderSelector() {
+    let sectionsArray = []
+    for (let i=0; i < readmeConfig.sections.length; i++) {
+        sectionsArray.push(new inquirer.Separator(`>>>>${readmeConfig.sections[i].toUpperCase()}<<<<`))
+        switch(i) {
+            case readmeConfig.sections.length-1:
+                break;
+            default:
+                sectionsArray.push(`After ${readmeConfig.sections[i]}`)
+        }
+    }
+    console.log(sectionsArray);
+    return sectionsArray
 }
 
 // launch the initialisation process
