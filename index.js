@@ -89,10 +89,59 @@ async function getMainSections() {
     .prompt(mainSections)
     .then((answers) => {
         if (answers.extraConsent) {
-            //run a function to ask for any extra sections
+            getExtraSections()
         }
     })
     .catch((err) => console.error(err))
+}
+
+// get extra sections if any
+async function getExtraSections() {
+
+    let needSection = true;
+    const extraSections = [
+        {
+            type: 'input',
+            message: 'Please input the section title',
+            name: 'sectionTitle'
+        },
+        {
+            type: 'list',
+            message: `Where do you want to add the section?`,
+            name: 'order',
+            choices: [ // test with hardcoded section separators & line selectors
+                new inquirer.Separator('Title'),
+                '<-',
+                new inquirer.Separator('Intro'),
+                '<-',
+                new inquirer.Separator('Description'),
+                '<-',
+                new inquirer.Separator('License')
+            ],
+            pageSize: 10,
+            loop: false,
+        },
+        {
+            type: 'editor',
+            message: 'Add the body of the section (Markdown is allowed):',
+            name: 'sectionBody',
+        },
+        {
+            type: 'confirm',
+            message: 'Do you want to another section to the README?',
+            name: 'needSection',
+            default: true
+        }
+    ]
+
+    while (needSection) {
+        await inquirer
+        .prompt(extraSections)
+        .then((answers) => {
+            needSection = answers.needSection
+            // somehow return index of the selection - may be necessary build a choice array of objects to add the index information
+        })
+    }
 }
 
 // launch the initialisation process
