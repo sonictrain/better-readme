@@ -10,7 +10,7 @@ let readmeConfig = {
     user: {},
     badges: [],
     sections: [],
-    tableOfContent: true,
+    tableOfContents: true,
     attribution: true,
 };
 
@@ -101,7 +101,8 @@ async function getMainSections() {
             readmeConfig.sections.push(
                 {
                     sectionName: "Title",
-                    bodyContent: projectTitle
+                    bodyContent: projectTitle,
+                    isTitle: true
                 },
                 {
                     sectionName: "Intro",
@@ -123,7 +124,7 @@ async function getMainSections() {
             }
 
             readmeConfig.badges.push({
-                label: license.trim(),
+                label: [license.replace(" ", "_")],
                 color: 'blue'
             })
 
@@ -230,7 +231,8 @@ async function getExtraSections() {
                         pushExtraSection(
                             {
                                 sectionName: extraTitle,
-                                bodyContent: extraImage
+                                bodyContent: extraImage,
+                                isMedia: true
                             },
                             appendAtIndex);
                         break;
@@ -284,9 +286,7 @@ init();
 // add the extra section in the position selected by the user
 const pushExtraSection = (newSectionObj, index) => {
     const head = readmeConfig.sections.slice(0, index + 1);
-    console.log(head);
     const tail = readmeConfig.sections.slice(index + 1);
-    console.log(tail);
     readmeConfig.sections = [...head, newSectionObj, ...tail]
 }
 
@@ -330,4 +330,3 @@ const pushExtraSection = (newSectionObj, index) => {
 //             console.log(JSON.stringify(readmeConfig));
 //         }
 //         )
-//     addExtraSections()
