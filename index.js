@@ -55,16 +55,34 @@ async function getMainSections() {
             type: 'input',
             message: `Enter the project title:\n`,
             name: 'projectTitle',
+            validate(text) {
+                if (text.length < 3) {
+                  return '❌ Must be at least 3 chars.';
+                }
+                return true;
+            },
         },
         {
             type: 'input',
             message: `Provide a brief introduction for the project (a more detailed description will be added later):\n`,
             name: 'brief',
+            validate(text) {
+                if (text.length < 20) {
+                  return '❌ Must be at least 20 chars.';
+                }
+                return true;
+            },
         },
         {
             type: 'editor',
             message: `Can you provide more details about the project for a thorough and in-depth description?\n`,
             name: 'description',
+            validate(text) {
+                if (text.length < 50) {
+                  return '❌ Must be at least 50 chars.';
+                }
+                return true;
+            },
         },
         {
             type: 'list',
@@ -83,6 +101,12 @@ async function getMainSections() {
             type: 'input',
             message: `Enter your GitHub username:\n`,
             name: 'username',
+            validate(username) {
+                if (/^[0-9A-Za-z\-]{3,39}$/.test(username)) {
+                    return true;
+                }
+                throw Error('❌ Please provide a valid username.');
+            },
             when: (answer) => answer.questions === true
         },
         {
@@ -93,7 +117,7 @@ async function getMainSections() {
                 if (/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email)) {
                     return true;
                 }
-                throw Error('Please provide a valid email.');
+                throw Error('❌ Please provide a valid email.');
             },
             when: (answer) => answer.questions === true
         },
@@ -152,7 +176,7 @@ async function getMainSections() {
             }
 
             readmeConfig.badges.push({
-                label: [license.split(" ").join("_")],
+                label: [license.replace(/[\s-]/gm, '_')],
                 color: randomColor().replace('#', '')
             })
 
@@ -191,6 +215,12 @@ async function getExtraSections() {
                 type: 'input',
                 message: 'Please input the section title:\n',
                 name: 'extraTitle',
+                validate(text) {
+                    if (text.length < 3) {
+                      return '❌ Must be at least 3 chars.';
+                    }
+                    return true;
+                },
                 when: (answer) => answer.extraType.split(' ')[0] !== 'Badge'
             },
             {
@@ -206,18 +236,36 @@ async function getExtraSections() {
                 type: 'editor',
                 message: 'Add the body of the section (Markdown is allowed):\n',
                 name: 'extraBody',
+                validate(text) {
+                    if (text.length < 20) {
+                      return '❌ Must be at least 20 chars.';
+                    }
+                    return true;
+                },
                 when: (answer) => answer.extraType.split(' ')[0] === 'Text'
             },
             {
                 type: 'input',
                 message: 'Paste here the URL to the image, either an absolute or relative path:\n',
                 name: 'extraImage',
+                validate(text) {
+                    if (text.length < 3) {
+                      return '❌ Must be at least 3 chars.';
+                    }
+                    return true;
+                },
                 when: (answer) => answer.extraType.split(' ')[0] === 'Image'
             },
             {
                 type: 'input',
                 message: 'Please input the Shield Badge label (one or two strings separated by a comma):\n',
                 name: 'extraBadgeLabel',
+                validate(text) {
+                    if (text.length < 3) {
+                      return '❌ Must be at least 3 chars.';
+                    }
+                    return true;
+                },
                 when: (answer) => answer.extraType.split(' ')[0] === 'Badge'
             },
             {
@@ -225,6 +273,12 @@ async function getExtraSections() {
                 message: 'Paste here the color name or hexcode for the Shield Badge:\n',
                 name: 'extraBadgeColor',
                 default: 'e.g.: #ff3300 or green',
+                validate(text) {
+                    if (text.length < 3) {
+                      return '❌ Must be at least 3 chars.';
+                    }
+                    return true;
+                },
                 when: (answer) => answer.extraType.split(' ')[0] === 'Badge'
             },
             {
@@ -255,7 +309,7 @@ async function getExtraSections() {
                         break;
                     case 'Image': pushExtraSection( {sectionName: extraTitle, bodyContent: extraImage, isMedia: true}, appendAtIndex );
                         break;
-                    case 'Badge': readmeConfig.badges.push({ label: extraBadgeLabel.split(',').map(x => x.trim()), color: extraBadgeColor.replace('#', '')})
+                    case 'Badge': readmeConfig.badges.push({ label: extraBadgeLabel.split(',').map(x => x.trim().replace('/\s/gm', '_')), color: extraBadgeColor.replace('#', '')})
                         break;
                 }
             })
