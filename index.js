@@ -1,17 +1,22 @@
-const fs = require("fs");
+// TODO add interrupt key to prompt the user with a fixed set of questions (like a menu) https://github.com/lnquy065/inquirer-interrupted-prompt
+// TODO use https://github.com/anc95/inquirer-file-tree-selection to pick and edit an old README generated with Better Readme 
+
 const inquirer = require("inquirer");
-// // const path = require('path');
-// // const chalk = require("chalk");
-// // const TableInput = require("inquirer-table-input");
-// // const generateMarkdown = require("./utils/generateMarkdown");
+const randomColor = require('randomcolor');
+const generateMarkdown = require("./utils/generateMarkdown");
 
 // readme global configuration object
 let readmeConfig = {
-    user: {},
+    projectTitle: '',
+    user: {
+        username: 'N/A',
+        email: 'N/A',
+    },
     badges: [],
     sections: [],
-    tableOfContents: true,
-    attribution: true,
+    tableOfContents: '',
+    questionsSection: '',
+    attribution: '',
 };
 
 // create licenses arr container to be filled with a fetch call to the github API
@@ -27,7 +32,7 @@ async function init() {
 async function getConsent() {
     const consent = {
         type: 'confirm',
-        message: 'Do you want to generate a README?\n',
+        message: 'Would you like to create a README file?\n',
         name: 'readmeConsent',
         default: true,
     }
@@ -48,34 +53,41 @@ async function getMainSections() {
     const mainSections = [
         {
             type: 'input',
-            message: `Please type the Title of the project:\n`,
+            message: `Enter the project title:\n`,
             name: 'projectTitle',
         },
         {
             type: 'input',
-            message: `Now please add a short description to serve as an Intro (a long description will follow):\n`,
-            name: 'shortDescription',
+            message: `Provide a brief introduction for the project (a more detailed description will be added later):\n`,
+            name: 'brief',
         },
         {
             type: 'editor',
-            message: `It's time for the long description (please note that Markdown language is allowed):\n`,
-            name: 'longDescription',
+            message: `Can you provide more details about the project for a thorough and in-depth description?\n`,
+            name: 'description',
         },
         {
             type: 'list',
-            message: `Lastly, I need you to pick a License for your project from the list below:\n`,
+            message: `Select a license for your project from the options listed below:`,
             name: 'license',
             choices: licensesArr.map((x) => x.name),
             loop: false,
         },
         {
-            type: 'input',
-            message: `What's your GitHub username?\n`,
-            name: 'username',
+            type: 'confirm',
+            message: 'Do you wish to include a "Got any questions?" section along with your contact details in the README?\n',
+            name: 'questions',
+            default: true,
         },
         {
             type: 'input',
-            message: `And what's your email?\n`,
+            message: `Enter your GitHub username:\n`,
+            name: 'username',
+            when: (answer) => answer.questions === true
+        },
+        {
+            type: 'input',
+            message: `Input your email address:\n`,
             name: 'email',
             validate(email) {
                 if (/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email)) {
@@ -83,10 +95,23 @@ async function getMainSections() {
                 }
                 throw Error('Please provide a valid email.');
             },
+            when: (answer) => answer.questions === true
         },
         {
             type: 'confirm',
-            message: 'Alright, I have captured all the mandatory information.\nDo you want to add any custom sections to your README?\n',
+            message: 'Would you like to include a table of contents in the README?\n',
+            name: 'tableOfContents',
+            default: true,
+        },
+        {
+            type: 'confirm',
+            message: 'Would you like to attribute the "Better Readme" program in your project?\n',
+            name: 'attribution',
+            default: true,
+        },
+        {
+            type: 'confirm',
+            message: 'Alrigth, I have all the essential details, do you wish to include any custom sections in your README?\n',
             name: 'extraConsent',
             default: true,
         }
@@ -96,8 +121,9 @@ async function getMainSections() {
         .prompt(mainSections)
         .then((answers) => {
 
-            const { projectTitle, shortDescription, longDescription, license, username, email } = answers
+            const { projectTitle, brief, description, license, username, email, tableOfContents, attribution, questions, extraConsent } = answers
 
+            readmeConfig.projectTitle = projectTitle
             readmeConfig.sections.push(
                 {
                     sectionName: "Title",
@@ -106,32 +132,37 @@ async function getMainSections() {
                 },
                 {
                     sectionName: "Intro",
-                    bodyContent: shortDescription
+                    bodyContent: brief
                 },
                 {
                     sectionName: "Description",
-                    bodyContent: longDescription
+                    bodyContent: description
                 },
                 {
                     sectionName: "License",
-                    bodyContent: license
+                    bodyContent: license,
+                    isLicense: true
                 },
             )
 
-            readmeConfig.user = {
-                username: username,
-                email: email,
+            readmeConfig.questionsSection = questions
+            if (questions) {
+                readmeConfig.user.username = username
+                readmeConfig.user.email = email
             }
 
             readmeConfig.badges.push({
-                label: [license.replace(" ", "_")],
-                color: 'blue'
+                label: [license.split(" ").join("_")],
+                color: randomColor()
             })
 
-            console.log(readmeConfig)
+            readmeConfig.tableOfContents = tableOfContents;
+            readmeConfig.attribution = attribution;
 
-            if (answers.extraConsent) {
+            if (extraConsent) {
                 getExtraSections()
+            } else {
+                generateMarkdown(readmeConfig);
             }
         })
         .catch((err) => console.error(err))
@@ -141,67 +172,68 @@ async function getMainSections() {
 async function getExtraSections() {
 
     let needSection = true;
-    const extraSections = [
-        {
-            type: 'list',
-            message: 'Please select the section type:\n',
-            name: 'extraType',
-            choices: [
-                'Text section (Title + paragraph)',
-                'Image section (Title + image)',
-                'Badge section (1 custom Shield Badge to be attached on top of the Readme)'
-            ],
-            loop: false,
-        },
-        {
-            type: 'input',
-            message: 'Please input the section title:\n',
-            name: 'extraTitle',
-            when: (answer) => answer.extraType.split(' ')[0] !== 'Badge'
-        },
-        {
-            type: 'list',
-            message: `Where do you want to add the section?\n`,
-            name: 'position',
-            choices: orderSelector(),
-            pageSize: 10,
-            loop: false,
-            when: (answer) => answer.extraType.split(' ')[0] !== 'Badge'
-        },
-        {
-            type: 'editor',
-            message: 'Add the body of the section (Markdown is allowed):\n',
-            name: 'extraBody',
-            when: (answer) => answer.extraType.split(' ')[0] === 'Text'
-        },
-        {
-            type: 'input',
-            message: 'Paste here the URL to the image, either an absolute or relative path:\n',
-            name: 'extraImage',
-            when: (answer) => answer.extraType.split(' ')[0] === 'Image'
-        },
-        {
-            type: 'input',
-            message: 'Please input the Shield Badge label (one or two strings separated by a comma):\n',
-            name: 'extraBadgeLabel',
-            when: (answer) => answer.extraType.split(' ')[0] === 'Badge'
-        },
-        {
-            type: 'chalk-pipe',
-            message: 'Paste here the color name or hexcode for the Shield Badge:\n',
-            name: 'extraBadgeColor',
-            default: 'e.g.: #ff3300 or green',
-            when: (answer) => answer.extraType.split(' ')[0] === 'Badge'
-        },
-        {
-            type: 'confirm',
-            message: 'Do you want to add another section to the README?\n',
-            name: 'needSection',
-            default: true
-        }
-    ]
-
+    
     while (needSection) {
+
+        const extraSections = [
+            {
+                type: 'list',
+                message: 'Please select the section type:',
+                name: 'extraType',
+                choices: [
+                    'Text section (Title + paragraph)',
+                    'Image section (Title + image)',
+                    'Badge section (1 custom Shield Badge to be attached on top of the Readme)'
+                ],
+                loop: false,
+            },
+            {
+                type: 'input',
+                message: 'Please input the section title:\n',
+                name: 'extraTitle',
+                when: (answer) => answer.extraType.split(' ')[0] !== 'Badge'
+            },
+            {
+                type: 'list',
+                message: `Where do you want to add the section?\n`,
+                name: 'position',
+                choices: orderSelector(),
+                pageSize: 10,
+                loop: false,
+                when: (answer) => answer.extraType.split(' ')[0] !== 'Badge'
+            },
+            {
+                type: 'editor',
+                message: 'Add the body of the section (Markdown is allowed):\n',
+                name: 'extraBody',
+                when: (answer) => answer.extraType.split(' ')[0] === 'Text'
+            },
+            {
+                type: 'input',
+                message: 'Paste here the URL to the image, either an absolute or relative path:\n',
+                name: 'extraImage',
+                when: (answer) => answer.extraType.split(' ')[0] === 'Image'
+            },
+            {
+                type: 'input',
+                message: 'Please input the Shield Badge label (one or two strings separated by a comma):\n',
+                name: 'extraBadgeLabel',
+                when: (answer) => answer.extraType.split(' ')[0] === 'Badge'
+            },
+            {
+                type: 'chalk-pipe',
+                message: 'Paste here the color name or hexcode for the Shield Badge:\n',
+                name: 'extraBadgeColor',
+                default: 'e.g.: #ff3300 or green',
+                when: (answer) => answer.extraType.split(' ')[0] === 'Badge'
+            },
+            {
+                type: 'confirm',
+                message: 'Do you want to add another section to the README?\n',
+                name: 'needSection',
+                default: true
+            }
+        ]
 
         inquirer.registerPrompt('chalk-pipe', require('inquirer-chalk-pipe'));
 
@@ -219,47 +251,31 @@ async function getExtraSections() {
                 }
 
                 switch (extraType.split(' ')[0]) {
-                    case 'Text':
-                        pushExtraSection(
-                            {
-                                sectionName: extraTitle,
-                                bodyContent: extraBody
-                            },
-                            appendAtIndex);
+                    case 'Text': pushExtraSection( {sectionName: extraTitle, bodyContent: extraBody}, appendAtIndex );
                         break;
-                    case 'Image':
-                        pushExtraSection(
-                            {
-                                sectionName: extraTitle,
-                                bodyContent: extraImage,
-                                isMedia: true
-                            },
-                            appendAtIndex);
+                    case 'Image': pushExtraSection( {sectionName: extraTitle, bodyContent: extraImage, isMedia: true}, appendAtIndex );
                         break;
-                    case 'Badge':
-                        readmeConfig.badges.push({
-                            label: extraBadgeLabel.split(',').map(x => x.trim()),
-                            color: extraBadgeColor.replace('#', '')
-                        })
+                    case 'Badge': readmeConfig.badges.push({ label: extraBadgeLabel.split(',').map(x => x.trim()), color: extraBadgeColor.replace('#', '')})
                         break;
                 }
-
-                console.log(readmeConfig)
             })
             .catch((err) => console.error(err))
     }
+    console.log(readmeConfig);
+    console.log(readmeConfig.badges)
+    generateMarkdown(readmeConfig);
 }
 
-// get position for the extra sections
+// get position for the extra sections // TODO rewrite using https://github.com/adam-golab/inquirer-select-line?tab=readme-ov-file
 function orderSelector() {
     let sectionsArray = []
     for (let i = 0; i < readmeConfig.sections.length; i++) {
-        sectionsArray.push(new inquirer.Separator(`>>>>${readmeConfig.sections[i].sectionName.toUpperCase()}<<<<`))
+        sectionsArray.push(new inquirer.Separator(`>>${readmeConfig.sections[i].sectionName.toUpperCase()}<<`))
         switch (i) {
             case readmeConfig.sections.length - 1:
                 break;
             default:
-                sectionsArray.push(`After ${readmeConfig.sections[i].sectionName}`)
+                sectionsArray.push(`After ${readmeConfig.sections[i].sectionName} and before ${readmeConfig.sections[i+1].sectionName}`)
         }
     }
     return sectionsArray
@@ -270,7 +286,6 @@ async function getLicenses() {
         const res = await fetch('https://api.github.com/licenses')
         if (res.status === 200) {
             licensesArr = await res.json();
-            licenses = licensesArr.forEach((x) => { return x.name })
         } else {
             console.log(`Error ${res.status}`);
         }
@@ -289,44 +304,3 @@ const pushExtraSection = (newSectionObj, index) => {
     const tail = readmeConfig.sections.slice(index + 1);
     readmeConfig.sections = [...head, newSectionObj, ...tail]
 }
-
-//     const dayjs = require('dayjs')
-
-//     const date = dayjs()
-//     await inquirer
-//         .prompt(initReadme)
-//         .then((answers) => {
-
-//             const title = answers.projectTitle;
-//             readmeConfig.sections.projectTitle = title
-//             readmeConfig.license = answers.license
-//             readmeConfig.repoLink = answers.repoLink
-//             readmeConfig.liveLink = answers.liveLink
-
-//             const folderTitle = title.toLowerCase().replace(' ', '_');
-//             const folderPath = `./output/${date.format('YYYYMMDD')}/${date.format('HHmmss')}-${folderTitle}`
-
-//             fs.mkdirSync(folderPath,
-//                 { recursive: true },
-//                 (err) => {
-//                     if (err) throw err;
-//                 }
-//                 );
-
-//             fs.writeFileSync(
-//                 `${folderPath}/README.md`,
-//                 `# ${title}`,
-//                 (err) =>
-//                     err ? console.error(err) : console.log(`README Saved in ${folderPath}!`)
-//                 );
-
-//             fs.writeFileSync(
-//                 `${folderPath}/conf.json`,
-//                 `${JSON.stringify(readmeConfig, null, 4)}`,
-//                 (err) =>
-//                     err ? console.error(err) : console.log(`Configuration file saved in ${folderPath}!`)
-//                 );
-
-//             console.log(JSON.stringify(readmeConfig));
-//         }
-//         )
