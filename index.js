@@ -153,7 +153,7 @@ async function getMainSections() {
 
             readmeConfig.badges.push({
                 label: [license.split(" ").join("_")],
-                color: randomColor()
+                color: randomColor().replace('#', '')
             })
 
             readmeConfig.tableOfContents = tableOfContents;
