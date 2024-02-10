@@ -3,14 +3,15 @@ const dayjs = require('dayjs')
 
 // generate and return Markdown
 const generateMarkdown = (readmeConfig) => {
-  const { projectTitle, sections, badges, attribution, questionsSection } = readmeConfig
+  const { projectTitle, sections, badges, attribution, questionsSection, tableOfContents } = readmeConfig
 
   let content = [...sections.map((s) => {
     if (s.isTitle)
     {
 return `# ${s.bodyContent}
 ${generateBadgesMD(badges)}\n
-${attachTableOfContents(readmeConfig).join(' ')}\n`
+## Table of Contents
+${tableOfContents ? attachTableOfContents(readmeConfig).join(' ') : null }\n`
     }
     else if (s.isMedia)
     {
@@ -18,7 +19,7 @@ return `## ${s.sectionName}
 ![${s.sectionName}](${s.bodyContent})\n`
     }
     else if (s.isLicense) {
-return `${questionsSection ? getQuestionsSection(readmeConfig) : ''}
+return `${questionsSection ? getQuestionsSection(readmeConfig) : null}
 ## ${s.sectionName}
 ${getLicenseDescription(s)}\n`
     }
@@ -32,7 +33,7 @@ ${s.bodyContent}\n`
   const date = dayjs()
 
   const folderTitle = projectTitle.toLowerCase().split(" ").join("_");
-  const versionFolderPath = `./output/${folderTitle}/${date.format('YYYYMMDD')}`
+  const versionFolderPath = `./output/${folderTitle}/${date.format('YYYYMMMDD')}/${date.format('HHmmss')}`
 
   fs.mkdirSync(versionFolderPath,
       { recursive: true },
@@ -42,17 +43,26 @@ ${s.bodyContent}\n`
   );
 
   fs.writeFileSync(
-    `${versionFolderPath}/${date.format('HHmmss')}-README.md`,
+    `${versionFolderPath}/README.md`,
     `${content}`,
-    (err) => err ? console.error(err) : console.log(`README Succesfully saved in ${versionFolderPath}!`)
+    (err) => {
+      if (err) {
+        throw err
+      }
+    } 
   );
+  console.log(`✅ README Succesfully saved in ${versionFolderPath}/README.md`)
 
   fs.writeFileSync(
-    `${versionFolderPath}/${date.format('HHmmss')}-conf.json`,
+    `${versionFolderPath}/conf.json`,
     `${JSON.stringify(readmeConfig, null, 4)}`,
-    (err) => err ? console.error(err) : console.log(`Configuration file saved in ${versionFolderPath}!`)
-  );
-
+    (err) => {
+      if (err) {
+        throw err
+      }
+    } 
+  )
+  console.log(`✅ Configuration file available here: ${versionFolderPath}/conf.json`)
 }
 
 // build Shield.io badges component
@@ -73,7 +83,7 @@ const attachTableOfContents = (readmeConfig) => {
 
   if (tableOfContents) {
     return sections.map((s, i) => {
-      return `${i}. [${s.sectionName}](#${s.sectionName})\n`
+return `${i}. [${s.sectionName}](#${s.sectionName})\n`
     })
   }
 }
