@@ -17,23 +17,26 @@ const generateMarkdown = async (readmeConfig) => {
 
   let content = [...sections.map((s) => {
     if (s.isTitle) {
-      return `# ${s.bodyContent}
-${generateBadgesMD(badges)}\n
-## Table of Contents
-${tableOfContents ? attachTableOfContents(readmeConfig).join(' ') : null}\n`
+      return `
+# ${s.bodyContent}
+${generateBadgesMD(badges)}
+${tableOfContents ? '## Table of Contents' && attachTableOfContents(readmeConfig).join(' ') : ''}`
     }
     else if (s.isMedia) {
-      return `## ${s.sectionName}
-![${s.sectionName}](${s.bodyContent})\n`
+      return `
+## ${s.sectionName}
+![${s.sectionName}](${s.bodyContent})`
     }
     else if (s.isLicense) {
-      return `${questionsSection ? getQuestionsSection(readmeConfig) : null}
+      return `
+${questionsSection ? getQuestionsSection(readmeConfig) : ''}
 ## ${s.sectionName}
-${licenseDescription}\n`
+${licenseDescription}`
     }
     else {
-      return `## ${s.sectionName}
-${s.bodyContent}\n`
+      return `\n
+## ${s.sectionName}
+${s.bodyContent}`
     }
   }), attributionBR(attribution)].join(' ')
 
@@ -90,7 +93,10 @@ const attachTableOfContents = (readmeConfig) => {
 
   if (tableOfContents) {
     return sections.map((s, i) => {
-      return `${i}. [${s.sectionName}](#${s.sectionName})\n`
+      if (i>0) {
+        return `
+${i}. [${s.sectionName}](#${s.sectionName})`
+      }
     })
   }
 }
@@ -114,13 +120,12 @@ const getLicenseDescription = async (licenseName) => {
   }
 }
 
-
-
 // create attribution
 const attributionBR = (attribution) => {
   if (attribution) {
-    return `\n---\n
-Generate with [Better Readme](https://github.com/sonictrain/better-readme) Copyright (c) 2024, [Nicola Brucoli](https://github.com/sonictrain).\n`
+    return `
+\n---\n
+Generate with [Better Readme](https://github.com/sonictrain/better-readme) Copyright (c) 2024, [Nicola Brucoli](https://github.com/sonictrain).`
   }
 }
 
