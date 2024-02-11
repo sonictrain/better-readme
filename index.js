@@ -170,8 +170,6 @@ async function getMainSections() {
                 },
             )
 
-            console.log(readmeConfig.sections.license);
-
             readmeConfig.questionsSection = questions
             if (questions) {
                 readmeConfig.user.username = username
@@ -318,8 +316,6 @@ async function getExtraSections() {
             })
             .catch((err) => console.error(err))
     }
-    console.log(readmeConfig);
-    console.log(readmeConfig.badges)
     generateMarkdown(readmeConfig);
 }
 
