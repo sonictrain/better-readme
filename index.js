@@ -165,9 +165,12 @@ async function getMainSections() {
                 {
                     sectionName: "License",
                     bodyContent: license,
+                    licenseKey: licensesArr[licensesArr.map(function(l) {return l.name }).indexOf(license)].key,
                     isLicense: true
                 },
             )
+
+            console.log(readmeConfig.sections.license);
 
             readmeConfig.questionsSection = questions
             if (questions) {
@@ -176,7 +179,7 @@ async function getMainSections() {
             }
 
             readmeConfig.badges.push({
-                label: [license.replace(/[\s-]/gm, '_')],
+                label: [license.replace(/ |-/gm, '_')],
                 color: randomColor().replace('#', '')
             })
 
@@ -309,7 +312,7 @@ async function getExtraSections() {
                         break;
                     case 'Image': pushExtraSection( {sectionName: extraTitle, bodyContent: extraImage, isMedia: true}, appendAtIndex );
                         break;
-                    case 'Badge': readmeConfig.badges.push({ label: extraBadgeLabel.split(',').map(x => x.trim().replace('/\s/gm', '_')), color: extraBadgeColor.replace('#', '')})
+                    case 'Badge': readmeConfig.badges.push({ label: extraBadgeLabel.split(',').map(x => x.trim().replace(/ |-/gm,"_")), color: extraBadgeColor.replace('#', '')})
                         break;
                 }
             })
