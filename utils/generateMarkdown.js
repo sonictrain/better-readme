@@ -2,30 +2,37 @@ const fs = require("fs");
 const dayjs = require('dayjs')
 
 // generate and return Markdown
-const generateMarkdown = (readmeConfig) => {
+const generateMarkdown = async (readmeConfig) => {
   const { projectTitle, sections, badges, attribution, questionsSection, tableOfContents } = readmeConfig
 
+  const licenseDescription = await getLicenseDescription(
+    sections[sections.map(function (l) {
+      if (l.isLicense) {
+        return true
+      } else {
+        return false
+      }
+    }).indexOf(true)].licenseKey
+  )
+
   let content = [...sections.map((s) => {
-    if (s.isTitle)
-    {
-return `# ${s.bodyContent}
+    if (s.isTitle) {
+      return `# ${s.bodyContent}
 ${generateBadgesMD(badges)}\n
 ## Table of Contents
-${tableOfContents ? attachTableOfContents(readmeConfig).join(' ') : null }\n`
+${tableOfContents ? attachTableOfContents(readmeConfig).join(' ') : null}\n`
     }
-    else if (s.isMedia)
-    {
-return `## ${s.sectionName}
+    else if (s.isMedia) {
+      return `## ${s.sectionName}
 ![${s.sectionName}](${s.bodyContent})\n`
     }
     else if (s.isLicense) {
-return `${questionsSection ? getQuestionsSection(readmeConfig) : null}
+      return `${questionsSection ? getQuestionsSection(readmeConfig) : null}
 ## ${s.sectionName}
-${getLicenseDescription(s)}\n`
+${licenseDescription}\n`
     }
-    else
-    {
-return `## ${s.sectionName}
+    else {
+      return `## ${s.sectionName}
 ${s.bodyContent}\n`
     }
   }), attributionBR(attribution)].join(' ')
@@ -36,10 +43,10 @@ ${s.bodyContent}\n`
   const versionFolderPath = `./output/${folderTitle}/${date.format('YYYYMMMDD')}/${date.format('HHmmss')}`
 
   fs.mkdirSync(versionFolderPath,
-      { recursive: true },
-      (err) => {
-          if (err) throw err;
-      }
+    { recursive: true },
+    (err) => {
+      if (err) throw err;
+    }
   );
 
   fs.writeFileSync(
@@ -49,7 +56,7 @@ ${s.bodyContent}\n`
       if (err) {
         throw err
       }
-    } 
+    }
   );
   console.log(`✅ README Succesfully saved in ${versionFolderPath}/README.md`)
 
@@ -60,7 +67,7 @@ ${s.bodyContent}\n`
       if (err) {
         throw err
       }
-    } 
+    }
   )
   console.log(`✅ Configuration file available here: ${versionFolderPath}/conf.json`)
 }
@@ -83,7 +90,7 @@ const attachTableOfContents = (readmeConfig) => {
 
   if (tableOfContents) {
     return sections.map((s, i) => {
-return `${i}. [${s.sectionName}](#${s.sectionName})\n`
+      return `${i}. [${s.sectionName}](#${s.sectionName})\n`
     })
   }
 }
@@ -99,13 +106,15 @@ const getLicenseDescription = async (licenseName) => {
   try {
     const res = await fetch(`https://api.github.com/licenses/${licenseName}`)
     if (res.status === 200) {
-        licenseData = await res.json()
-        return licenseData.description
+      licenseData = await res.json()
+      return licenseData.description
     }
   } catch {
     (err) => console.error(err)
   }
 }
+
+
 
 // create attribution
 const attributionBR = (attribution) => {
